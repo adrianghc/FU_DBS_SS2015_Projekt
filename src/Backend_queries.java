@@ -26,10 +26,33 @@ public class Backend_queries {
 		
 	}
 	
-	public ResultSet queryGranulated(String fromParse, String selectParse, String whereParse) throws SQLException {
+	public ResultSet querySQL(String SQLstatement) throws SQLException {
 		
 		try {
-			PreparedStatement st = conn.prepareStatement("SELECT " + selectParse + " FROM " + fromParse + " WHERE " + whereParse);
+			PreparedStatement st = conn.prepareStatement(SQLstatement);
+			ResultSet rs = st.executeQuery();
+			return rs;
+		}
+		catch (SQLException e) {
+			throw e;
+		}
+		
+	}
+	
+	public ResultSet queryGranulated(String fromParse, String selectParse, String whereParse, String groupParse, String orderParse, String limitParse) throws SQLException {
+		
+		try {
+			String statement = "SELECT " + selectParse + " FROM " + fromParse + " WHERE " + whereParse;
+			if (!groupParse.equals("")) {
+				statement = statement + " GROUP BY " + groupParse;
+			}
+			if (!orderParse.equals("")) {
+				statement = statement + " ORDER BY " + orderParse;
+			}
+			if (!limitParse.equals("")) {
+				statement = statement + " LIMIT " + limitParse;
+			}
+			PreparedStatement st = conn.prepareStatement(statement);
 			ResultSet rs = st.executeQuery();
 			return rs;
 		}

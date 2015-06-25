@@ -113,11 +113,7 @@ public class Frontend {
 	    	}
 	    	else if (cont == 0) startScreen();
 	    	else if (cont == 1) import_java_intro();
-	    	else if (cont == 2) {
-	    		System.out.println("Noch nicht verfügbar.");
-	    		import_howToContinue();
-	    		//import_sql_intro();
-	    	}
+	    	else if (cont == 2) import_sql_intro();
 	    	
 	    	else if (cont == 42) { // Einträge der Datenbank löschen; für Testzwecke
 	    		
@@ -355,13 +351,14 @@ public class Frontend {
 	    
 	    try {
 	    	int cont = scanner.nextInt();
-	    	if (cont != 0 && cont != 1 && cont != 2) {
+	    	if (cont != 0 && cont != 1 && cont != 2 && cont != 3) {
 	    		System.out.println("Keine gültige Eingabe.");
 	    		queries_console_howToContinue();
 	    	}
 	    	else if (cont == 0) queries_intro();
 	    	else if (cont == 1) queries_console_all();
 	    	else if (cont == 2) queries_console_granulated();
+	    	else if (cont == 3) queries_console_sql();
 	    	
 	    }
 	    catch (java.util.InputMismatchException e) {
@@ -643,7 +640,7 @@ public class Frontend {
 		
 	}
 	
-	public static void queries_console_granulated() {
+	public static void queries_console_sql() {
 		
 		//String[] fromParsed = null;
 		//String[] selectParsed = null;
@@ -701,65 +698,24 @@ public class Frontend {
 		
 		
 		// Einlesen
-		String fromParse = "";
-		String selectParse = "";
-		String whereParse = "";
+		String parse = "";
 		
-		Scanner from = new Scanner(System.in);
-	    System.out.print("Aus welchen Tabellen soll ausgewählt werden? Namen bitte durch Komma abtrennen: ");
+		Scanner scanner = new Scanner(System.in);
+	    System.out.print("Bitte SQL-Befehl eingeben: ");
 	    
 	    // Tabellennamen
 	    try {
-	    	fromParse = from.nextLine();
-	    	if (fromParse.equals("")) {
-	    		System.out.println("Bitte mindestens einen Tabellennamen angeben.");
-		    	queries_console_granulated();
-	    	}
-	    	System.out.println();
+	    	parse = scanner.nextLine();
 	    }
 	    catch (java.util.InputMismatchException e) {
 	    	System.out.println("Keine gültige Eingabe.");
-	    	queries_console_granulated();
+	    	queries_console_sql();
 	    }
 	    
 	    
-	    Scanner select = new Scanner(System.in);
-	    System.out.print("Welche Spalten sollen ausgewählt werden? Namen bitte durch Komma abtrennen (* für alle): ");
-	    
-	    // Spaltennamen
-	    try {
-	    	selectParse = select.nextLine();
-	    	if (selectParse.equals("")) {
-	    		System.out.println("Bitte mindestens einen Spaltennamen angeben.");
-		    	queries_console_granulated();
-	    	}
-	    	System.out.println();
-	    }
-	    catch (java.util.InputMismatchException e) {
-	    	System.out.println("Keine gültige Eingabe.");
-	    	queries_console_granulated();
-	    }
-	    
-	    
-	    Scanner where = new Scanner(System.in);
-	    System.out.print("Bitte zusätzliche Bedingungen in SQL-Syntax angeben: WHERE ");
-	    
-	    // Spaltennamen
-	    try {
-	    	whereParse = where.nextLine();
-	    	if (whereParse.equals("")) {
-	    		whereParse = "1 = 1";
-	    	}
-	    	System.out.println();
-	    }
-	    catch (java.util.InputMismatchException e) {
-	    	System.out.println("Keine gültige Eingabe.");
-	    	queries_console_granulated();
-	    }
-		
 	    try {
 	    	
-	    	ResultSet rs = backend.backendQueries.queryGranulated(fromParse, selectParse, whereParse);
+	    	ResultSet rs = backend.backendQueries.querySQL(parse);
 	    	
 	    	/*
 	    	 * movies:
@@ -794,7 +750,7 @@ public class Frontend {
 		    		colOrder[i-1] = "ID";
 		    	}
 		    	else if (md.getColumnName(i).equals("name")) {
-		    		System.out.print("| name                                                                         ");
+		    		System.out.print("| name                                                                             ");
 		    		colOrder[i-1] = "name";
 		    	}
 		    	else if (md.getColumnName(i).equals("year")) {
@@ -816,6 +772,10 @@ public class Frontend {
 		    	else if (md.getColumnName(i).equals("movie_id")) {
 		    		System.out.print("| movie_ID ");
 		    		colOrder[i-1] = "movie_ID";
+		    	}
+		    	else if (md.getColumnName(i).equals("count")) {
+		    		System.out.print("| count      ");
+		    		colOrder[i-1] = "count";
 		    	}
 		    }
 	    	System.out.print("|\n");
@@ -867,13 +827,311 @@ public class Frontend {
 							System.out.print(" ");
 						}
 			    	}
+			    	else if (colOrder[i-1].equals("count")) {
+			    		Integer count = new Integer(rs.getInt(i));
+		    			System.out.print("| " + rs.getInt(i));
+		    			for (int j = 1; j <= 10 - Integer.toString(count).length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
 		    	}
 		    	System.out.print("|\n");
 		    }
-		    
+		    queries_console_intro();
 	    }
 	    catch (SQLException e) {
 	    	System.out.println("Die Eingabe war nicht gültig. Womöglich existieren die angegebenen Tabellen oder Spalten nicht oder es wurde keine gültige SQL-Syntax angegeben.");
+	    	queries_console_sql();
+	    }
+		
+	}
+	
+	public static void queries_console_granulated() {
+		
+		// Ausgabe der Tabellenstrukturen
+		System.out.println("\nTabelle 'movies':\n");
+		System.out.println(
+				
+				"| Name    | Datentyp    | Constraints |\n"
+			+	"|---------|-------------|-------------|\n"
+			+	"| ID      | INT         | PRIMARY KEY |\n"
+			+	"| name    | varchar(80) | NOT NULL    |\n"
+			+	"| year    | SMALLINT    | NOT NULL    |\n"
+			+	"| rating  | DECIMAL     |             |\n"
+			+	"| votes   | INT         | DEFAULT 0   |\n"
+			+	"| runtime | SMALLINT    | NOT NULL    |\n"
+			
+			);
+		
+		System.out.println("\nTabelle 'directors':\n");
+		System.out.println(
+				
+				"| Name     | Datentyp    | Constraints                       |\n"
+			+	"|----------|-------------|-----------------------------------|\n"
+			+	"| movie_ID | INT         | FOREIGN KEY REFERENCES movies(ID) |\n"
+			+	"| name     | varchar(50) | NOT NULL                          |\n"
+			+	"                                                              \n"
+			+	" PRIMARY KEY (movie_ID, name)                                 \n"
+			
+			);
+		
+		System.out.println("\nTabelle 'actors':\n");
+		System.out.println(
+				
+				"| Name     | Datentyp    | Constraints                       |\n"
+			+	"|----------|-------------|-----------------------------------|\n"
+			+	"| movie_ID | INT         | FOREIGN KEY REFERENCES movies(ID) |\n"
+			+	"| name     | varchar(50) | NOT NULL                          |\n"
+			+	"                                                              \n"
+			+	" PRIMARY KEY (movie_ID, name)                                 \n"
+			
+			);
+		
+		System.out.println("\nTabelle 'genres':\n");
+		System.out.println(
+				
+				"| Name     | Datentyp    | Constraints                       |\n"
+			+	"|----------|-------------|-----------------------------------|\n"
+			+	"| movie_ID | INT         | FOREIGN KEY REFERENCES movies(ID) |\n"
+			+	"| name     | varchar(20) | NOT NULL                          |\n"
+			+	"                                                              \n"
+			+	" PRIMARY KEY (movie_ID, name)                                 \n"
+			
+			);
+		
+		
+		// Einlesen
+		String fromParse = "";
+		String selectParse = "";
+		String whereParse = "";
+		String groupParse = "";
+		String orderParse = "";
+		String limitParse = "";
+		
+		Scanner from = new Scanner(System.in);
+	    System.out.print("Aus welchen Tabellen soll ausgewählt werden? Namen bitte durch Komma abtrennen: ");
+	    
+	    // Tabellennamen
+	    try {
+	    	fromParse = from.nextLine();
+	    	if (fromParse.equals("")) {
+	    		System.out.println("Bitte mindestens einen Tabellennamen angeben.");
+		    	queries_console_granulated();
+	    	}
+	    	System.out.println();
+	    }
+	    catch (java.util.InputMismatchException e) {
+	    	System.out.println("Keine gültige Eingabe.");
+	    	queries_console_granulated();
+	    }
+	    
+	    
+	    Scanner select = new Scanner(System.in);
+	    System.out.print("Welche Spalten sollen ausgewählt werden? Namen bitte durch Komma abtrennen (* für alle): ");
+	    
+	    // Spaltennamen
+	    try {
+	    	selectParse = select.nextLine();
+	    	if (selectParse.equals("")) {
+	    		System.out.println("Bitte mindestens einen Spaltennamen angeben.");
+		    	queries_console_granulated();
+	    	}
+	    	System.out.println();
+	    }
+	    catch (java.util.InputMismatchException e) {
+	    	System.out.println("Keine gültige Eingabe.");
+	    	queries_console_granulated();
+	    }
+	    
+	    
+	    Scanner where = new Scanner(System.in);
+	    System.out.print("Bitte zusätzliche Bedingungen in SQL-Syntax angeben: WHERE ");
+	    
+	    // Zusätzliche Bedingungen
+	    try {
+	    	whereParse = where.nextLine();
+	    	if (whereParse.equals("")) {
+	    		whereParse = "1 = 1";
+	    	}
+	    	System.out.println();
+	    }
+	    catch (java.util.InputMismatchException e) {
+	    	System.out.println("Keine gültige Eingabe.");
+	    	queries_console_granulated();
+	    }
+	    
+	    
+	    Scanner group = new Scanner(System.in);
+	    System.out.print("Gruppieren nach: GROUP BY ");
+	    
+	    // GROUP BY
+	    try {
+	    	groupParse = group.nextLine();
+	    	System.out.println();
+	    }
+	    catch (java.util.InputMismatchException e) {
+	    	System.out.println("Keine gültige Eingabe.");
+	    	queries_console_granulated();
+	    }
+	    
+	    
+	    Scanner order = new Scanner(System.in);
+	    System.out.print("Sortieren nach: ORDER BY ");
+	    
+	    // ORDER BY
+	    try {
+	    	orderParse = order.nextLine();
+	    	System.out.println();
+	    }
+	    catch (java.util.InputMismatchException e) {
+	    	System.out.println("Keine gültige Eingabe.");
+	    	queries_console_granulated();
+	    }
+	    
+	    
+	    Scanner limit = new Scanner(System.in);
+	    System.out.print("Anzahl der ausgegebenen Einträge: ");
+	    
+	    // ORDER BY
+	    try {
+	    	limitParse = limit.nextLine();
+	    	System.out.println();
+	    }
+	    catch (java.util.InputMismatchException e) {
+	    	System.out.println("Keine gültige Eingabe.");
+	    	queries_console_granulated();
+	    }
+	    
+		
+	    try {
+	    	
+	    	ResultSet rs = backend.backendQueries.queryGranulated(fromParse, selectParse, whereParse, groupParse, orderParse, limitParse);
+	    	
+	    	/*
+	    	 * movies:
+	    	 * 
+			 * ID: 7 Zeichen
+			 * name: 80 Zeichen
+			 * year: 4 Zeichen
+			 * rating: 6 Zeichen
+			 * votes: 10 Zeichen
+			 * runtime: 7 Zeichen
+			 * 
+			 * directors, actors:
+			 * 
+			 * movie_ID: 8 Zeichen
+			 * name: 50 Zeichen
+			 * 
+			 * genres:
+			 * 
+			 * movie_ID: 8 Zeichen
+			 * name: 20 Zeichen
+			 * 
+			 */
+	    	
+	    	// Ausgabe
+		    ResultSetMetaData md = rs.getMetaData();
+		    int colCount = md.getColumnCount();
+		    String[] colOrder = new String[colCount];
+		    
+		    for (int i = 1; i <= colCount; i++) {
+		    	if (md.getColumnName(i).equals("id")) {
+		    		System.out.print("| ID      ");
+		    		colOrder[i-1] = "ID";
+		    	}
+		    	else if (md.getColumnName(i).equals("name")) {
+		    		System.out.print("| name                                                                             ");
+		    		colOrder[i-1] = "name";
+		    	}
+		    	else if (md.getColumnName(i).equals("year")) {
+		    		System.out.print("| year ");
+		    		colOrder[i-1] = "year";
+		    	}
+		    	else if (md.getColumnName(i).equals("rating")) {
+		    		System.out.print("| rating ");
+		    		colOrder[i-1] = "rating";
+		    	}
+		    	else if (md.getColumnName(i).equals("votes")) {
+		    		System.out.print("| votes      ");
+		    		colOrder[i-1] = "votes";
+		    	}
+		    	else if (md.getColumnName(i).equals("runtime")) {
+		    		System.out.print("| runtime ");
+		    		colOrder[i-1] = "runtime";
+		    	}
+		    	else if (md.getColumnName(i).equals("movie_id")) {
+		    		System.out.print("| movie_ID ");
+		    		colOrder[i-1] = "movie_ID";
+		    	}
+		    	else if (md.getColumnName(i).equals("count")) {
+		    		System.out.print("| count      ");
+		    		colOrder[i-1] = "count";
+		    	}
+		    }
+	    	System.out.print("|\n");
+		    
+		    while (rs.next()) {
+		    	for (int i = 1; i <= colCount; i++) {
+		    		if (colOrder[i-1].equals("ID")) {
+		    			Integer ID = new Integer(rs.getInt(i));
+		    			System.out.print("| " + rs.getInt(i));
+		    			for (int j = 1; j <= 8 - Integer.toString(ID).length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
+			    	else if (colOrder[i-1].equals("name")) {
+			    		String name = rs.getString(i);
+		    			System.out.print("| " + name);
+		    			for (int j = 1; j <= 81 - name.length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
+			    	else if (colOrder[i-1].equals("year")) {
+			    		System.out.print("| " + rs.getInt(i) + " ");
+			    	}
+			    	else if (colOrder[i-1].equals("rating")) {
+			    		Float rating = new Float(rs.getFloat(i));
+		    			System.out.print("| " + rs.getFloat(i));
+		    			for (int j = 1; j <= 7 - Float.toString(rating).length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
+			    	else if (colOrder[i-1].equals("votes")) {
+			    		Integer votes = new Integer(rs.getInt(i));
+		    			System.out.print("| " + rs.getInt(i));
+		    			for (int j = 1; j <= 11 - Integer.toString(votes).length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
+			    	else if (colOrder[i-1].equals("runtime")) {
+			    		Integer runtime = new Integer(rs.getInt(i));
+		    			System.out.print("| " + rs.getInt(i));
+		    			for (int j = 1; j <= 8 - Integer.toString(runtime).length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
+			    	else if (colOrder[i-1].equals("movie_ID")) {
+			    		Integer ID = new Integer(rs.getInt(i));
+		    			System.out.print("| " + rs.getInt(i));
+		    			for (int j = 1; j <= 9 - Integer.toString(ID).length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
+			    	else if (colOrder[i-1].equals("count")) {
+			    		Integer count = new Integer(rs.getInt(i));
+		    			System.out.print("| " + rs.getInt(i));
+		    			for (int j = 1; j <= 10 - Integer.toString(count).length(); j++) {
+							System.out.print(" ");
+						}
+			    	}
+		    	}
+		    	System.out.print("|\n");
+		    }
+		    queries_console_intro();
+	    }
+	    catch (SQLException e) {
+	    	System.out.println("Die Eingabe war nicht gültig. Womöglich existieren die angegebenen Tabellen oder Spalten nicht oder es wurde keine gültige SQL-Syntax angegeben.");
+	    	queries_console_granulated();
 	    }
 		
 	}

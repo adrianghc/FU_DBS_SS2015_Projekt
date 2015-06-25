@@ -178,8 +178,78 @@ public class Backend_import {
 	public void importSQL(String csvFile) throws DataFormatException, FileNotFoundException, IOException, SQLException {
 		
 		try {
-			PreparedStatement st = conn.prepareStatement("");
-			st.executeQuery();
+			PreparedStatement st1 = conn.prepareStatement("CREATE TABLE Import("
+															+ "temp_id CHAR(9)"
+															+ "temp_name VARCHAR(250),"
+															+ "temp_year VARCHAR(10),"
+															+ "temp_rating VARCHAR(5),"
+															+ "temp_votes VARCHAR(10),"
+															+ "temp_runtime VARCHAR(10),"
+															+ "temp_directors VARCHAR(100),"
+															+ "temp_actors VARCHAR(100),"
+															+ "temp_genres VARCHAR(100)"
+															+ ");");
+			st1.executeQuery();
+			
+			PreparedStatement st2 = conn.prepareStatement("\\COPY Import FROM '" + csvFile + "' (DELIMITER E'\t');");
+			st2.executeQuery();
+			
+			PreparedStatement st3 = conn.prepareStatement("INSERT INTO movies (SELECT"
+															+ "CAST(substring(temp_id from 3 for 7) AS INT),"
+															+ "temp_name, CAST(substring(temp_year from 1 for 4) AS INT),"
+															+ "CASE WHEN temp_rating = 'NA' OR temp_rating = '-' "
+																+ "THEN 0 "
+																+ "ELSE CAST(temp_rating as NUMERIC) "
+																+ "END, "
+															+ "CASE WHEN temp_votes = 'NA' OR temp_votes = '-' "
+																+ "THEN 0 "
+																+ "ELSE CAST(temp_votes AS INT) "
+																+ "END, "
+															+ "CASE WHEN temp_runtime = 'NA' OR temp_runtime = '-' "
+																+ "THEN 0 "
+																+ "ELSE CAST(substring(temp_runtime from 1 for length(temp_runtime) - 6) AS INT) "
+																+ "END "
+															+ "FROM Import);");
+			st3.executeQuery();
+			
+			PreparedStatement st4 = conn.prepareStatement("INSERT INTO directors(SELECT "
+																+ "CAST(substring(temp_id from 3 for 7) AS INT),"
+																+ "CASE WHEN temp_directors != '[''NA'']' AND temp_directors != 'NA' "
+																	+ "THEN regexp_split_to_table(temp_directors,'\\|')"
+																	+ "ELSE '-'  "
+																	+ "END "
+																+ "FROM Import "
+																+ "GROUP BY temp_id, regexp_split_to_table(temp_directors,'\\|'),temp_directors");
+			st4.executeQuery();
+			
+			PreparedStatement st5 = conn.prepareStatement("INSERT INTO directors(SELECT "
+																+ "CAST(substring(temp_id from 3 for 7) AS INT),"
+																+ "CASE WHEN temp_actors != '[''NA'']' AND temp_actors != 'NA' "
+																	+ "THEN regexp_split_to_table(temp_actors,'\\|')"
+																	+ "ELSE '-'  "
+																	+ "END "
+																+ "FROM Import "
+																+ "GROUP BY temp_id, regexp_split_to_table(temp_actors,'\\|'),temp_actors");
+			st5.executeQuery();
+			
+			PreparedStatement st6 = conn.prepareStatement("INSERT INTO directors(SELECT "
+																+ "CAST(substring(temp_id from 3 for 7) AS INT),"
+																+ "CASE WHEN temp_genres != '[''NA'']' AND temp_genres != 'NA' "
+																	+ "THEN regexp_split_to_table(temp_genres,'\\|')"
+																	+ "ELSE '-'  "
+																	+ "END "
+																+ "FROM Import "
+																+ "GROUP BY temp_id, regexp_split_to_table(temp_genres,'\\|'),temp_genres");
+			st6.executeQuery();
+			
+			PreparedStatement st7 = conn.prepareStatement("DELETE FROM directors WHERE name = '-';");
+			st7.executeQuery();
+			
+			PreparedStatement st8 = conn.prepareStatement("DELETE FROM actors WHERE name = '-';");
+			st8.executeQuery();
+			
+			PreparedStatement st9 = conn.prepareStatement("DELETE FROM genres WHERE name = '-';");
+			st9.executeQuery();
 		}
 		catch (SQLException e) {
 			throw e;
